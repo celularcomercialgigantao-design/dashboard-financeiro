@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Financeiro — Fornecedores</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0B1E3D;
+    --navy-mid: #132848;
+    --navy-light: #1A3560;
+    --blue: #1E6FD9;
+    --blue-bright: #2B87FF;
+    --blue-pale: #E8F1FD;
+    --teal: #0FA88E;
+    --teal-pale: #E4F7F4;
+    --green: #1DB37E;
+    --green-pale: #E3F7EE;
+    --amber: #F5A623;
+    --amber-pale: #FEF5E7;
+    --red: #E53E3E;
+    --red-pale: #FEF0F0;
+    --gray-100: #F4F6FA;
+    --gray-200: #E8ECF4;
+    --gray-300: #C9D2E3;
+    --gray-500: #7A8BAA;
+    --gray-700: #3D4E6A;
+    --white: #FFFFFF;
+    --shadow-sm: 0 1px 4px rgba(11,30,61,.06);
+    --shadow-md: 0 4px 16px rgba(11,30,61,.10);
+    --shadow-lg: 0 8px 32px rgba(11,30,61,.14);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--gray-100);
+    color: var(--navy);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    position: fixed; top: 0; left: 0;
+    width: 240px; height: 100vh;
+    background: var(--navy);
+    display: flex; flex-direction: column;
+    z-index: 100;
+    padding: 0;
+    transition: transform .3s ease;
+  }
+  .sidebar-logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .sidebar-logo h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px; font-weight: 800;
+    color: var(--white); letter-spacing: -.3px;
+  }
+  .sidebar-logo span { color: var(--blue-bright); }
+  .sidebar-logo p { font-size: 11px; color: var(--gray-500); margin-top: 2px; letter-spacing: .4px; text-transform: uppercase; }
+  .sidebar-nav { padding: 20px 12px; flex: 1; }
+  .nav-label { font-size: 10px; font-weight: 600; color: var(--gray-500); letter-spacing: 1px; text-transform: uppercase; padding: 0 12px; margin: 16px 0 6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: var(--radius-sm);
+    color: var(--gray-300); font-size: 13.5px; font-weight: 500;
+    cursor: pointer; transition: all .2s; margin-bottom: 2px;
+    text-decoration: none;
+  }
+  .nav-item:hover { background: rgba(255,255,255,.07); color: var(--white); }
+  .nav-item.active { background: var(--blue); color: var(--white); }
+  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+  .sidebar-footer {
+    padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.08);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--blue); display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; color: white; font-size: 14px;
+  }
+  .avatar-info p { font-size: 13px; font-weight: 600; color: var(--white); }
+  .avatar-info span { font-size: 11px; color: var(--gray-500); }
+
+  /* ── MAIN ── */
+  .main {
+    margin-left: 240px;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--white); border-bottom: 1px solid var(--gray-200);
+    padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50;
+    box-shadow: var(--shadow-sm);
+  }
+  .topbar-left h2 {
+    font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: var(--navy);
+  }
+  .topbar-left p { font-size: 13px; color: var(--gray-500); margin-top: 1px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .hamburger {
+    display: none; background: none; border: none; cursor: pointer; padding: 4px;
+    flex-direction: column; gap: 5px;
+  }
+  .hamburger span { display: block; width: 22px; height: 2px; background: var(--navy); border-radius: 2px; }
+
+  /* ── FILTERS BAR ── */
+  .filters-bar {
+    background: var(--white); border-bottom: 1px solid var(--gray-200);
+    padding: 14px 32px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .filter-label { font-size: 12px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+  .filter-select, .filter-input {
+    appearance: none; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+    padding: 8px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    color: var(--navy); background: var(--gray-100); cursor: pointer; outline: none;
+    transition: border-color .2s, background .2s; min-width: 140px;
+  }
+  .filter-select:focus, .filter-input:focus { border-color: var(--blue); background: var(--white); }
+  .filter-btn {
+    padding: 8px 18px; border-radius: var(--radius-sm); border: none;
+    background: var(--blue); color: var(--white); font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: background .2s;
+    white-space: nowrap;
+  }
+  .filter-btn:hover { background: var(--blue-bright); }
+  .filter-btn.secondary {
+    background: var(--gray-200); color: var(--gray-700);
+  }
+  .filter-btn.secondary:hover { background: var(--gray-300); }
+
+  /* ── CONTENT ── */
+  .content { padding: 28px 32px; flex: 1; }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 28px;
+  }
+  .kpi-card {
+    background: var(--white); border-radius: var(--radius);
+    padding: 22px 24px; box-shadow: var(--shadow-sm);
+    border: 1.5px solid var(--gray-200);
+    transition: box-shadow .2s, transform .2s;
+    position: relative; overflow: hidden;
+  }
+  .kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .kpi-card.blue::before { background: linear-gradient(90deg, var(--blue), var(--blue-bright)); }
+  .kpi-card.green::before { background: linear-gradient(90deg, var(--teal), var(--green)); }
+  .kpi-card.amber::before { background: linear-gradient(90deg, var(--amber), #F9C55A); }
+  .kpi-card.navy::before { background: linear-gradient(90deg, var(--navy-light), var(--blue)); }
+  .kpi-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+  .kpi-label { font-size: 12px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: .5px; }
+  .kpi-icon {
+    width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .kpi-icon.blue { background: var(--blue-pale); }
+  .kpi-icon.green { background: var(--teal-pale); }
+  .kpi-icon.amber { background: var(--amber-pale); }
+  .kpi-icon.navy { background: var(--blue-pale); }
+  .kpi-value {
+    font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800;
+    color: var(--navy); letter-spacing: -.5px; line-height: 1;
+  }
+  .kpi-sub { font-size: 12px; color: var(--gray-500); margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+  .badge-up { color: var(--green); font-weight: 700; }
+  .badge-down { color: var(--red); font-weight: 700; }
+
+  /* ── CHARTS ROW ── */
+  .charts-grid {
+    display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 28px;
+  }
+  .chart-card {
+    background: var(--white); border-radius: var(--radius);
+    padding: 24px; box-shadow: var(--shadow-sm);
+    border: 1.5px solid var(--gray-200);
+  }
+  .chart-title {
+    font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  .chart-sub { font-size: 12px; color: var(--gray-500); margin-bottom: 20px; }
+  .chart-wrap { position: relative; height: 220px; }
+
+  .charts-grid2 {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 28px;
+  }
+
+  /* ── TABLE ── */
+  .table-card {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow-sm); border: 1.5px solid var(--gray-200);
+    overflow: hidden;
+  }
+  .table-header {
+    padding: 20px 24px 16px; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .table-header h3 { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--navy); }
+  .table-header p { font-size: 12px; color: var(--gray-500); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: var(--gray-100); padding: 11px 16px;
+    font-size: 11px; font-weight: 700; color: var(--gray-500);
+    text-transform: uppercase; letter-spacing: .6px; text-align: left;
+    white-space: nowrap; border-bottom: 1px solid var(--gray-200);
+  }
+  tbody tr { border-bottom: 1px solid var(--gray-200); transition: background .15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--blue-pale); }
+  tbody tr.pending-row { background: #FFF9F0; }
+  tbody tr.pending-row:hover { background: #FEF3E2; }
+  td { padding: 13px 16px; font-size: 13.5px; color: var(--navy); white-space: nowrap; }
+  td.supplier { font-weight: 600; }
+  td.amount { font-family: 'Syne', sans-serif; font-weight: 700; }
+  td.amount.due { color: var(--navy); }
+  td.amount.paid { color: var(--teal); }
+  td.amount.pending { color: var(--amber); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge.pago { background: var(--green-pale); color: #0D7A5A; }
+  .badge.parcial { background: var(--amber-pale); color: #B47A10; }
+  .badge.pendente { background: var(--red-pale); color: var(--red); }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* Progress bar */
+  .progress-wrap { display: flex; align-items: center; gap: 8px; }
+  .progress-bar { flex: 1; height: 6px; background: var(--gray-200); border-radius: 10px; overflow: hidden; min-width: 60px; }
+  .progress-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--teal), var(--green)); }
+  .progress-pct { font-size: 11.5px; font-weight: 700; color: var(--gray-500); min-width: 34px; text-align: right; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1100px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-grid { grid-template-columns: 1fr; }
+    .charts-grid2 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; }
+    .topbar { padding: 14px 18px; }
+    .filters-bar { padding: 12px 18px; }
+    .content { padding: 18px; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .hamburger { display: flex; }
+    .overlay { display: block; }
+    .kpi-value { font-size: 20px; }
+  }
+  @media (max-width: 480px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+  }
+
+  .overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+    z-index: 90;
+  }
+  .overlay.active { display: block; }
+
+  /* Legend */
+  .chart-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--gray-700); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <h1>Fin<span>Flow</span></h1>
+    <p>Gestão Financeira</p>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Principal</div>
+    <a class="nav-item active" href="#"><span class="icon">📊</span> Dashboard</a>
+    <a class="nav-item" href="#"><span class="icon">🏢</span> Fornecedores</a>
+    <a class="nav-item" href="#"><span class="icon">💳</span> Pagamentos</a>
+    <a class="nav-item" href="#"><span class="icon">📄</span> Notas Fiscais</a>
+    <div class="nav-label">Relatórios</div>
+    <a class="nav-item" href="#"><span class="icon">📈</span> Análises</a>
+    <a class="nav-item" href="#"><span class="icon">📋</span> Exportar</a>
+    <div class="nav-label">Sistema</div>
+    <a class="nav-item" href="#"><span class="icon">⚙️</span> Configurações</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="avatar">JM</div>
+    <div class="avatar-info">
+      <p>João Melo</p>
+      <span>Financeiro</span>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <!-- Topbar -->
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="topbar-left">
+        <h2>Painel de Fornecedores</h2>
+        <p>Última atualização: hoje às 09:42</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="filter-btn secondary" onclick="exportData()">⬇ Exportar</button>
+      <button class="filter-btn" onclick="refreshData()">↻ Atualizar</button>
+    </div>
+  </header>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <span class="filter-label">Filtros:</span>
+    <select class="filter-select" id="filterPeriod" onchange="applyFilters()">
+      <option value="mes">Este Mês</option>
+      <option value="semana">Esta Semana</option>
+      <option value="dia">Hoje</option>
+      <option value="ano">Este Ano</option>
+      <option value="custom">Personalizado</option>
+    </select>
+    <select class="filter-select" id="filterSupplier" onchange="applyFilters()">
+      <option value="">Todos os Fornecedores</option>
+      <option value="TechParts">TechParts Ltda.</option>
+      <option value="Metalúrgica">Metalúrgica Sul S.A.</option>
+      <option value="LogiTrans">LogiTrans Express</option>
+      <option value="OfficeMax">OfficeMax Brasil</option>
+      <option value="EcoEmbal">EcoEmbalagens</option>
+      <option value="DataServ">DataServ TI</option>
+    </select>
+    <select class="filter-select" id="filterStatus" onchange="applyFilters()">
+      <option value="">Todos os Status</option>
+      <option value="Pago">Pago</option>
+      <option value="Parcial">Parcial</option>
+      <option value="Pendente">Pendente</option>
+    </select>
+    <button class="filter-btn secondary" onclick="resetFilters()">✕ Limpar</button>
+  </div>
+
+  <!-- Content -->
+  <main class="content">
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-header">
+          <span class="kpi-label">Total Devido</span>
+          <div class="kpi-icon blue">💰</div>
+        </div>
+        <div class="kpi-value" id="kpiDevido">R$ 487.350</div>
+        <div class="kpi-sub"><span class="badge-up">↑ 8,3%</span> vs. mês anterior</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-header">
+          <span class="kpi-label">Total Pago</span>
+          <div class="kpi-icon green">✅</div>
+        </div>
+        <div class="kpi-value" id="kpiPago">R$ 312.800</div>
+        <div class="kpi-sub"><span class="badge-up">↑ 12,1%</span> vs. mês anterior</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-header">
+          <span class="kpi-label">Saldo Pendente</span>
+          <div class="kpi-icon amber">⏳</div>
+        </div>
+        <div class="kpi-value" id="kpiPendente">R$ 174.550</div>
+        <div class="kpi-sub"><span class="badge-down">↑ 4,2%</span> atenção necessária</div>
+      </div>
+      <div class="kpi-card navy">
+        <div class="kpi-header">
+          <span class="kpi-label">% Pago</span>
+          <div class="kpi-icon navy">📊</div>
+        </div>
+        <div class="kpi-value" id="kpiPct">64,2%</div>
+        <div class="kpi-sub">Meta: 80% — <span style="color:var(--amber);font-weight:700;">abaixo</span></div>
+      </div>
+    </div>
+
+    <!-- Charts row 1 -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">Devido × Pago por Mês</div>
+        <div class="chart-sub">Comparativo mensal do período selecionado</div>
+        <div class="chart-wrap"><canvas id="chartBar"></canvas></div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Valor Devido</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div> Valor Pago</div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Proporção Pago × Pendente</div>
+        <div class="chart-sub">Distribuição do período atual</div>
+        <div class="chart-wrap"><canvas id="chartPie"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Charts row 2 -->
+    <div class="charts-grid2">
+      <div class="chart-card">
+        <div class="chart-title">Evolução dos Pagamentos</div>
+        <div class="chart-sub">Tendência acumulada de valores pagos</div>
+        <div class="chart-wrap"><canvas id="chartLine"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Pagamento por Fornecedor</div>
+        <div class="chart-sub">% pago vs. pendente por fornecedor</div>
+        <div id="supplierBars" style="display:flex;flex-direction:column;gap:14px;padding-top:4px;"></div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-header">
+        <div>
+          <h3>Detalhamento por Fornecedor</h3>
+          <p id="tableCount">Exibindo 6 registros</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" class="filter-input" placeholder="🔍 Buscar fornecedor..." oninput="filterTable(this.value)" style="min-width:180px;">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fornecedor</th>
+              <th>Período</th>
+              <th>Valor Devido</th>
+              <th>Valor Pago</th>
+              <th>Saldo Pendente</th>
+              <th>% Pago</th>
+              <th>Último Pagamento</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+/* ── DATA ── */
+const allData = [
+  { supplier:'TechParts Ltda.', period:'Jan–Jun/2025', due:98500, paid:98500, lastPay:'15/06/2025', status:'Pago' },
+  { supplier:'Metalúrgica Sul S.A.', period:'Jan–Jun/2025', due:142000, paid:87300, lastPay:'10/06/2025', status:'Parcial' },
+  { supplier:'LogiTrans Express', period:'Jan–Jun/2025', due:63200, paid:63200, lastPay:'01/06/2025', status:'Pago' },
+  { supplier:'OfficeMax Brasil', period:'Jan–Jun/2025', due:38750, paid:12500, lastPay:'28/05/2025', status:'Parcial' },
+  { supplier:'EcoEmbalagens', period:'Jan–Jun/2025', due:51400, paid:0, lastPay:'—', status:'Pendente' },
+  { supplier:'DataServ TI', period:'Jan–Jun/2025', due:93500, paid:51300, lastPay:'08/06/2025', status:'Parcial' },
+];
+
+const fmt = v => v === 0 && v !== 0 ? '—' : 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+/* ── TABLE ── */
+function renderTable(data) {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  data.forEach(r => {
+    const pending = r.due - r.paid;
+    const pct = r.due > 0 ? (r.paid / r.due * 100) : 0;
+    const isPending = r.status === 'Pendente';
+    tbody.innerHTML += `
+      <tr class="${isPending ? 'pending-row' : ''}">
+        <td class="supplier">${r.supplier}</td>
+        <td>${r.period}</td>
+        <td class="amount due">${fmt(r.due)}</td>
+        <td class="amount paid">${fmt(r.paid)}</td>
+        <td class="amount pending">${fmt(pending)}</td>
+        <td>
+          <div class="progress-wrap">
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+            <span class="progress-pct">${pct.toFixed(0)}%</span>
+          </div>
+        </td>
+        <td>${r.lastPay}</td>
+        <td><span class="badge ${r.status.toLowerCase()}">${r.status}</span></td>
+      </tr>`;
+  });
+  document.getElementById('tableCount').textContent = `Exibindo ${data.length} registros`;
+}
+
+function filterTable(q) {
+  const filtered = allData.filter(r => r.supplier.toLowerCase().includes(q.toLowerCase()));
+  renderTable(filtered);
+}
+
+function applyFilters() {
+  const sup = document.getElementById('filterSupplier').value;
+  const st = document.getElementById('filterStatus').value;
+  const filtered = allData.filter(r =>
+    (!sup || r.supplier.includes(sup)) &&
+    (!st || r.status === st)
+  );
+  renderTable(filtered);
+}
+
+function resetFilters() {
+  document.getElementById('filterPeriod').value = 'mes';
+  document.getElementById('filterSupplier').value = '';
+  document.getElementById('filterStatus').value = '';
+  renderTable(allData);
+}
+
+/* ── SUPPLIER BARS ── */
+function renderSupplierBars() {
+  const wrap = document.getElementById('supplierBars');
+  allData.forEach(r => {
+    const pct = r.due > 0 ? (r.paid / r.due * 100) : 0;
+    const color = r.status === 'Pago' ? 'var(--teal)' : r.status === 'Parcial' ? 'var(--amber)' : 'var(--red)';
+    wrap.innerHTML += `
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+          <span style="font-size:12.5px;font-weight:600;color:var(--navy)">${r.supplier.split(' ')[0]}</span>
+          <span style="font-size:12px;color:var(--gray-500)">${pct.toFixed(0)}%</span>
+        </div>
+        <div style="height:8px;background:var(--gray-200);border-radius:10px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${color};border-radius:10px;transition:width .8s ease;"></div>
+        </div>
+      </div>`;
+  });
+}
+
+/* ── CHARTS ── */
+const months = ['Jan','Fev','Mar','Abr','Mai','Jun'];
+const dueData = [72000, 88000, 65000, 95000, 110000, 93500];
+const paidData = [65000, 72000, 58000, 78000, 89000, 75000];
+
+function initCharts() {
+  const baseFont = { family: "'DM Sans', sans-serif", size: 12 };
+
+  // Bar Chart
+  new Chart(document.getElementById('chartBar'), {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        { label:'Valor Devido', data: dueData, backgroundColor: 'rgba(30,111,217,.85)', borderRadius: 6, borderSkipped: false },
+        { label:'Valor Pago', data: paidData, backgroundColor: 'rgba(15,168,142,.85)', borderRadius: 6, borderSkipped: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: ctx => ' ' + fmt(ctx.raw) }
+      }},
+      scales: {
+        x: { grid: { display: false }, ticks: { font: baseFont, color:'#7A8BAA' } },
+        y: { grid: { color: '#E8ECF4' }, ticks: { font: baseFont, color:'#7A8BAA', callback: v => 'R$ ' + (v/1000).toFixed(0) + 'k' } }
+      }
+    }
+  });
+
+  // Pie Chart
+  new Chart(document.getElementById('chartPie'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Pago', 'Pendente'],
+      datasets: [{ data: [312800, 174550], backgroundColor: ['#0FA88E','#F5A623'], borderWidth: 0, hoverOffset: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: {
+        legend: { position: 'bottom', labels: { font: baseFont, color:'#3D4E6A', padding: 14, usePointStyle: true, pointStyleWidth: 10 } },
+        tooltip: { callbacks: { label: ctx => ' ' + fmt(ctx.raw) } }
+      }
+    }
+  });
+
+  // Line Chart
+  const cumPaid = paidData.reduce((acc, v, i) => { acc.push((acc[i-1]||0)+v); return acc; }, []);
+  new Chart(document.getElementById('chartLine'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [{
+        label:'Pagamentos Acumulados',
+        data: cumPaid,
+        borderColor: '#1E6FD9', backgroundColor: 'rgba(30,111,217,.08)',
+        borderWidth: 2.5, fill: true, tension: .4,
+        pointBackgroundColor: '#1E6FD9', pointRadius: 4, pointHoverRadius: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: ctx => ' ' + fmt(ctx.raw) }
+      }},
+      scales: {
+        x: { grid: { display: false }, ticks: { font: baseFont, color:'#7A8BAA' } },
+        y: { grid: { color: '#E8ECF4' }, ticks: { font: baseFont, color:'#7A8BAA', callback: v => 'R$ ' + (v/1000).toFixed(0) + 'k' } }
+      }
+    }
+  });
+}
+
+/* ── UTILS ── */
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('active');
+}
+
+function refreshData() {
+  const btn = document.querySelector('.filter-btn:not(.secondary)');
+  btn.textContent = '↻ Atualizando...';
+  btn.disabled = true;
+  setTimeout(() => { btn.textContent = '↻ Atualizar'; btn.disabled = false; }, 1200);
+}
+
+function exportData() { alert('Funcionalidade de exportação disponível na versão completa.'); }
+
+/* ── INIT ── */
+renderTable(allData);
+renderSupplierBars();
+initCharts();
+</script>
+</body>
+</html>
